@@ -5,43 +5,34 @@ from scipy.spatial.distance import cosine
 import cv2
 import face_recognition
 
-def extract_features_from_image(image_input):
-    """
-    Extract features (embedding) from a given image (path or frame).
-    Only the detected face is used after resizing.
-    """
-    # Read the image if path is provided
-    if isinstance(image_input, str):
-        img = cv2.imread(image_input)
-    else:
-        img = image_input  # If already a frame (e.g. from webcam)
+import cv2
+import numpy as np
+import requests
+from deepface import DeepFace
 
-    # Convert to RGB
+def extract_features_from_image(url_or_path):
+    # Check if input is URL
+    if url_or_path.startswith("http://") or url_or_path.startswith("https://"):
+        response = requests.get(url_or_path)
+        if response.status_code == 200:
+            img_array = np.frombuffer(response.content, np.uint8)
+            img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        else:
+            raise Exception(f"Failed to download image from {url_or_path}")
+    else:
+        img = cv2.imread(url_or_path)
+
+    if img is None:
+        raise Exception(f"Failed to load image from {url_or_path}")
+
+    # Convert BGR to RGB
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    # Detect face locations
-    face_locations = face_recognition.face_locations(rgb_img)
+    # Get embedding
+    embedding_obj = DeepFace.represent(img_path=rgb_img, model_name='ArcFace', enforce_detection=True)
+    embedding = np.array(embedding_obj[0]["embedding"])
 
-    if not face_locations:
-        print("❌ No face detected.")
-        return None
-
-    # Use the first detected face
-    top, right, bottom, left = face_locations[0]
-    face_crop = rgb_img[top:bottom, left:right]
-
-    # Resize to 112x112 (ArcFace requirement)
-    face_resized = cv2.resize(face_crop, (112, 112))
-
-    try:
-        # Generate embedding
-        embedding_obj = DeepFace.represent(img_path=face_resized, model_name="ArcFace", enforce_detection=False)
-        embedding = np.array(embedding_obj[0]['embedding'])
-        return embedding
-
-    except Exception as e:
-        print(f"❌ Error generating embedding: {e}")
-        return None
+    return embedding
 
 def find_user(username, password, current_embedding, data_path="user_data.npy", threshold=0.3):
     # Load saved user data
@@ -74,13 +65,27 @@ def find_user(username, password, current_embedding, data_path="user_data.npy", 
 
 DATA_PATH = "user_data.npy"
 
-def create_user(username, password, img_path, model_name='ArcFace', user_data_path="DATA_PATH"):
+import os
+import cv2
+import numpy as np
+import requests
+from deepface import DeepFace
+from io import BytesIO
+from PIL import Image
+
+def create_user(username, password, img_path, model_name='ArcFace', user_data_path="user_data.npy"):
     try:
-        # Step 1: Read image
-        img = cv2.imread(img_path)
-        if img is None:
-            print("❌ Image not found at:", img_path)
-            return
+        # Step 1: Read image from URL or path
+        if img_path.startswith("http://") or img_path.startswith("https://"):
+            response = requests.get(img_path)
+            img = Image.open(BytesIO(response.content)).convert("RGB")
+            img = np.array(img)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)  # Convert to BGR for consistency
+        else:
+            img = cv2.imread(img_path)
+            if img is None:
+                print("❌ Image not found at:", img_path)
+                return
 
         # Step 2: Convert to RGB for DeepFace
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -121,16 +126,39 @@ def create_user(username, password, img_path, model_name='ArcFace', user_data_pa
     except Exception as e:
         print("⚠️ Error in create_user:", e)
 
+import cv2
+import numpy as np
+import requests
+from deepface import DeepFace
+
 def generate_embeddings(img_path):
-  current_img_path = "/Users/ranawatprajinrajbhavesh/Desktop/fe88a689-0a69-479c-854b-510250737b41.jpg"
-  
-  current_embedding_obj = DeepFace.represent(img_path=current_img_path, model_name='ArcFace', enforce_detection=True)
-  current_embedding = np.array(current_embedding_obj[0]["embedding"])
-  return current_embedding
+    # Check if img_path is a URL
+    if img_path.startswith("http://") or img_path.startswith("https://"):
+        response = requests.get(img_path)
+        if response.status_code == 200:
+            img_array = np.frombuffer(response.content, np.uint8)
+            img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        else:
+            raise Exception(f"Failed to download image from {img_path}")
+    else:
+        img = cv2.imread(img_path)
+
+    if img is None:
+        raise Exception(f"Failed to load image from {img_path}")
+
+    # Convert BGR to RGB
+    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Get embedding
+    current_embedding_obj = DeepFace.represent(img_path=rgb_img, model_name='ArcFace', enforce_detection=True)
+    current_embedding = np.array(current_embedding_obj[0]["embedding"])
+
+    return current_embedding
+
   
 user_data = [
     {"username": "Vyas", "password": "1234", "embedding": generate_embeddings("/Users/ranawatprajinrajbhavesh/Desktop/c619597c-d17b-4c1d-9699-2f73c0dded13.jpg")},
-    {"username": "Bhut", "password": "12345", "embedding": generate_embeddings("/Users/ranawatprajinrajbhavesh/Desktop/fe88a689-0a69-479c-854b-510250737b41.jpg")},
+    {"username": "Bhut", "password": "12345", "embedding": generate_embeddings("https://firebasestorage.googleapis.com/v0/b/blog-37a17.appspot.com/o/users%2F0xDummyAddress123-1742650787170-charles.jpg?alt=media&token=3d20387f-072e-4ecf-b1a2-cf05240e9bcb")},
     {"username": "Veer", "password": "123456", "embedding": generate_embeddings("/Users/ranawatprajinrajbhavesh/Desktop/66ed4c04-0d4d-43e2-91e9-9260eeca610e.jpg")},
     {"username": "Meet", "password": "1234567", "embedding": generate_embeddings("/Users/ranawatprajinrajbhavesh/Desktop/d928bae9-fcc3-4571-a590-5980c7ddd9c6.jpg")},
     {"username": "Prajin", "password": "12345678", "embedding": generate_embeddings("/Users/ranawatprajinrajbhavesh/Desktop/1e9ddc52-c444-4711-b9ba-4258eebe1596.jpg")}
@@ -146,4 +174,4 @@ current_embedding_obj = DeepFace.represent(img_path=current_img_path, model_name
 current_embedding = np.array(current_embedding_obj[0]["embedding"])
 
 # Check user match
-find_user("Bhut", "12345", extract_features_from_image("/Users/ranawatprajinrajbhavesh/Desktop/f5044828-cc46-415a-a22f-675a483b0140.jpg"))
+find_user("Bhut", "12345", extract_features_from_image("https://firebasestorage.googleapis.com/v0/b/blog-37a17.appspot.com/o/users%2F0xDummyAddress123-1742650787170-charles.jpg?alt=media&token=3d20387f-072e-4ecf-b1a2-cf05240e9bcb"))
