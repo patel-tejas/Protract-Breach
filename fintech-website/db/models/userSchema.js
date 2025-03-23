@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   walletAddress: {
@@ -19,17 +18,17 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 6
+  },
+  image_url: {
+    type: String,
+    required: true
   }
 }, {
   timestamps: true
 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});
 
-module.exports = mongoose.model('User', userSchema);
+// Check if model already exists
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+export default User;

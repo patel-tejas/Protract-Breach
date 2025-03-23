@@ -63,11 +63,7 @@ export function DashboardSidebar({ isSidebarOpen, toggleSidebar }: SidebarProps)
       } md:translate-x-0`}
     >
       <div className="flex h-16 items-center justify-between border-b border-fintech-black-800 px-4">
-        <Link href="/" className="flex items-center">
-          <span className="text-xl font-bold">
-            <span className="gradient-text">Fin</span>Pulse
-          </span>
-        </Link>
+       
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
           <span className="sr-only">Close sidebar</span>
           <svg

@@ -2,13 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
-from deepface import DeepFace
 import cv2
 import requests
-from io import BytesIO
-from PIL import Image
+from deepface import DeepFace
 from scipy.spatial.distance import cosine
 import os
+from io import BytesIO
+from PIL import Image
 
 app = FastAPI()
 
@@ -31,7 +31,7 @@ class FaceVerification(BaseModel):
     image_url: str
 
 def enforce_uint8(img):
-    """Ensure image is in 8-bit unsigned integer format"""
+    """Ensure image array is in uint8 format"""
     if img.dtype != np.uint8:
         if img.max() <= 1.0:  # Handle normalized float images
             img = (img * 255).astype(np.uint8)
@@ -39,95 +39,109 @@ def enforce_uint8(img):
             img = img.astype(np.uint8)
     return img
 
-def safe_cvt_color(img, conversion):  # Corrected function name
-    """Safe color conversion wrapper"""
-    img = enforce_uint8(img)
-    return cv2.cvtColor(img, conversion)
-
-def process_image_url(url):
-    """Process image from URL with enhanced type handling"""
-    response = requests.get(url)
-    response.raise_for_status()
-    
-    img = Image.open(BytesIO(response.content)).convert("RGB")
-    img_array = np.array(img)
-    
-    # Convert PIL array to OpenCV format with proper type
-    img_array = safe_cvt_color(img_array, cv2.COLOR_RGB2BGR)  # Use corrected name
-    return enforce_uint8(img_array)
-
 def extract_features_from_image(url_or_path):
-    try:
-        if url_or_path.startswith(("http://", "https://")):
-            img = process_image_url(url_or_path)
+    if url_or_path.startswith(("http://", "https://")):
+        response = requests.get(url_or_path)
+        if response.status_code == 200:
+            img = Image.open(BytesIO(response.content)).convert("RGB")
+            img_array = np.array(img)
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
         else:
-            img = cv2.imread(url_or_path)
-            if img is None:
-                raise Exception(f"Failed to load image from {url_or_path}")
-            img = enforce_uint8(img)
+            raise Exception(f"Failed to download image from {url_or_path}")
+    else:
+        img_array = cv2.imread(url_or_path)
 
-        # Convert to RGB for DeepFace processing
-        rgb_img = safe_cvt_color(img, cv2.COLOR_BGR2RGB)  # Use corrected name
-        
-        embedding_obj = DeepFace.represent(
-            img_path=rgb_img, 
-            model_name='ArcFace', 
-            enforce_detection=True
-        )
-        return np.array(embedding_obj[0]["embedding"])
+    if img_array is None:
+        raise Exception(f"Failed to load image from {url_or_path}")
+
+    # Ensure proper data type
+    img_array = enforce_uint8(img_array)
     
-    except Exception as e:
-        raise Exception(f"Image processing failed: {str(e)}")
+    rgb_img = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+    embedding_obj = DeepFace.represent(img_path=rgb_img, model_name='ArcFace', enforce_detection=True)
+    return np.array(embedding_obj[0]["embedding"])
+
+def find_user(username, password, current_embedding, data_path="user_data.npy", threshold=0.3):
+    try:
+        user_data = np.load(data_path, allow_pickle=True)
+    except FileNotFoundError:
+        print("❌ User data file not found.")
+        return False
+
+    for user in user_data:
+        if user["username"] == username and user["password"] == password:
+            saved_embedding = user["embedding"]
+            similarity = 1 - cosine(saved_embedding, current_embedding)
+            print(f"✅ Cosine Similarity: {similarity:.4f}")
+            
+            if similarity > (1 - threshold):
+                print("🎉 Face verified successfully!")
+                return True
+            else:
+                print("⚠️ Face does not match!")
+                return False
+
+    print("❌ Username or password is incorrect.")
+    return False
 
 def create_user(username, password, img_path):
     try:
         if img_path.startswith(("http://", "https://")):
-            img = process_image_url(img_path)
+            response = requests.get(img_path)
+            img = Image.open(BytesIO(response.content)).convert("RGB")
+            img_array = np.array(img)
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
         else:
-            img = cv2.imread(img_path)
-            if img is None:
-                raise Exception("Image not found")
-            img = enforce_uint8(img)
+            img_array = cv2.imread(img_path)
+            if img_array is None:
+                print("❌ Image not found at:", img_path)
+                return False
 
-        # Convert to RGB for face extraction
-        rgb_img = safe_cvt_color(img, cv2.COLOR_BGR2RGB)  # Use corrected name
+        # Ensure uint8 format
+        img_array = enforce_uint8(img_array)
 
+        # Convert to RGB for processing
+        rgb_img = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+        
         # Extract faces with type safety
         faces = DeepFace.extract_faces(img_path=rgb_img, enforce_detection=True)
         if not faces:
-            raise Exception("No face detected")
+            print("❌ No face detected.")
+            return False
 
+        # Process face image
         face = enforce_uint8(faces[0]['face'])
-        
-        # Resize and convert to grayscale
         resized_face = cv2.resize(face, (100, 100))
-        gray_face = safe_cvt_color(resized_face, cv2.COLOR_RGB2GRAY)  # Use corrected name
-        final_face = safe_cvt_color(gray_face, cv2.COLOR_GRAY2RGB)  # Use corrected name
+        
+        # Convert to grayscale and back to RGB with proper typing
+        gray_face = cv2.cvtColor(resized_face, cv2.COLOR_RGB2GRAY)
+        gray_face = enforce_uint8(gray_face)  # Ensure uint8 before conversion
+        final_face = cv2.cvtColor(gray_face, cv2.COLOR_GRAY2RGB)
 
         # Generate embedding
-        embedding_obj = DeepFace.represent(
-            img_path=final_face, 
-            model_name='ArcFace', 
-            enforce_detection=False
-        )
+        embedding_obj = DeepFace.represent(img_path=final_face, model_name='ArcFace', enforce_detection=False)
         embedding = np.array(embedding_obj[0]["embedding"])
 
-        # Save user data
+        # Update user data
         user_data = []
         if os.path.exists("user_data.npy"):
             user_data = np.load("user_data.npy", allow_pickle=True).tolist()
-            
+        
+        print("📝 Saving user data...")
+        print(f"Username: {username} Password: {password}")
         user_data.append({
             "username": username,
             "password": password,
             "embedding": embedding
         })
-        
+
         np.save("user_data.npy", user_data)
+        print("✅ User data saved as .npy")
         return True
-    
+
     except Exception as e:
-        raise Exception(f"Registration failed: {str(e)}")
+        print(f"⚠️ Error in create_user: {str(e)}")
+        return False
 
 @app.post("/register")
 async def register_user(user: UserRegistration):
@@ -139,48 +153,20 @@ async def register_user(user: UserRegistration):
 
 @app.post("/verify")
 async def verify_face(verification: FaceVerification):
+    print(f"🔍 Verifying {verification.username}... {verification.password}")
     try:
-        # Verify input parameters
-        if not verification.username or not verification.password:
-            raise HTTPException(status_code=400, detail="Missing credentials")
-            
-        # Extract features from input image
         current_embedding = extract_features_from_image(verification.image_url)
-        current_embedding_array = np.array(current_embedding)
-        
-        # Load user data
-        try:
-            user_data = np.load("user_data.npy", allow_pickle=True).tolist()
-        except FileNotFoundError:
-            return {"verified": False, "error": "No registered users"}
-
-        # Find matching user
-        matched_user = next(
-            (user for user in user_data 
-             if user["username"] == verification.username 
-             and user["password"] == verification.password),
-            None
+        result = find_user(
+            verification.username,
+            verification.password,
+            current_embedding
         )
-
-        if not matched_user:
-            return {"verified": False, "error": "Invalid credentials"}
-
-        # Convert stored embedding
-        saved_embedding = np.array(matched_user["embedding"])
-        
-        # Calculate similarity
-        similarity = 1 - cosine(saved_embedding, current_embedding_array)
-        threshold = 0.7  # Adjust this value as needed
-        
-        return {
-            "verified": bool(similarity > threshold),
-            "similarity_score": float(similarity),
-            "threshold": float(threshold)
-        }
-    
+        return {"verified": result}
     except Exception as e:
+        print(f"⚠️ Error in verify_face: {str(e)}")
+        return {"verified": False}
         raise HTTPException(status_code=400, detail=str(e))
-    
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

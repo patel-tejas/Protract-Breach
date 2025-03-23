@@ -1,14 +1,17 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const db = async ()=>{
-    try{
-        mongoose.set('strictQuery', false)
-        await mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true, useUnifiedTopology: true})
-        console.log("DB connected");
-
-    } catch(error){
-        console.log('DB connection error', error);
+const connectDB = async () => {
+    try {
+        mongoose.set('strictQuery', false);
+        await mongoose.connect(process.env.MONGO_URL, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log("MongoDB connected");
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+        process.exit(1); // Exit process with failure
     }
-}
+};
 
-module.exports = {db}
+module.exports = connectDB; // Export the function directly

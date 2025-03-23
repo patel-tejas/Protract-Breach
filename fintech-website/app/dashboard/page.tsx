@@ -125,35 +125,7 @@ export default function Dashboard() {
       <DashboardSidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
       <div className="flex-1 md:ml-64">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-fintech-black-800 bg-background px-4 sm:px-6 lg:px-8">
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
-          <div className="relative flex-1 md:grow-0 md:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search..."
-              className="w-full rounded-md border border-input bg-background pl-8 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-          </div>
-          <div className="flex flex-1 items-center justify-end gap-4">
-            <Button variant="outline" size="icon">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-            <Button variant="outline" size="sm" className="ml-auto hidden md:flex">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button size="sm" className="hidden md:flex">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Transaction
-            </Button>
-          </div>
-        </header>
-
+    
         <main className="grid gap-4 p-4 md:gap-8 md:p-6">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>

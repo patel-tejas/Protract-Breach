@@ -6,8 +6,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-// import { ConnectButton } from "thirdweb/react";
-import { client } from "@/app/client";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -27,9 +25,8 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
+    // { name: "About", href: "/about" },
     { name: "Dashboard", href: "/dashboard" },
-    { name: "Crowdfunding", href: "/crowdfunding" },
   ]
 
   // Handle Sign In: connect wallet if needed then navigate to /signin
@@ -63,7 +60,7 @@ const Navbar = () => {
                 transition={{ duration: 0.5 }}
                 className="text-2xl font-bold text-white"
               >
-                <span className="gradient-text">Fin</span>Pulse
+                <span className="gradient-text">Pro</span>Tract
               </motion.div>
             </Link>
           </div>
@@ -81,9 +78,11 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex items-center space-x-4">
-              <Button size="sm" >
-                Sign In
-              </Button>
+              <Link href="/signin">
+                <Button size="sm" >
+                  Sign In
+                </Button>
+              </Link>
               <Link href="/signup">
                 <Button size="sm">
                   Register
@@ -127,12 +126,16 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 pt-2 border-t border-fintech-black-800">
-                <Button className="w-full justify-start" onClick={() => { setIsOpen(false); handleSignIn() }}>
+              <Link href="/signin" className="w-full justify-start">
+                <Button size="sm" >
                   Sign In
                 </Button>
-                <Button className="w-full" onClick={() => { setIsOpen(false); handleRegister() }}>
-                  Sign Up
+              </Link>
+              <Link href="/signup">
+                <Button size="sm">
+                  Register
                 </Button>
+              </Link>
               </div>
             </div>
           </motion.div>

@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-white">
-              <span className="gradient-text">Fin</span>Pulse
+              <span className="gradient-text">Pro</span>tract
             </h3>
             <p className="text-sm text-muted-foreground">
               Innovative financial technology solutions for the modern world.
@@ -144,7 +144,7 @@ const Footer = () => {
 
         <div className="mt-12 border-t border-fintech-black-800 pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} FinPulse. All rights reserved.
+            &copy; {new Date().getFullYear()} Protract. All rights reserved.
           </p>
         </div>
       </div>

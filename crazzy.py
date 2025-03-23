@@ -4,7 +4,6 @@ import os
 from scipy.spatial.distance import cosine
 import cv2
 import face_recognition
-
 import cv2
 import numpy as np
 import requests
