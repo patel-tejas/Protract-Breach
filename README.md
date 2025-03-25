@@ -10,10 +10,8 @@
 - ⛓ Blockchain Security (Ethereum/MetaMask)  
 
 **Key Features:**  
-✅ Real-time transaction monitoring  
 ✅ Biometric user verification  
 ✅ Immutable audit trails  
-✅ Fraud alerts with 92%+ accuracy  
 
 ---
 
@@ -27,10 +25,10 @@
 ---
 
 ## 👥 Team Chatgpters  
-- **Tejas Patel** - Backend Architect  
+- **Tejas Patel** - Blockchain Developer
 - **Prajinraj Ranawat** - AI/ML Specialist  
 - **Dhwani Bhut** - Frontend Lead  
-- **Dhwani Vyas** - Blockchain Developer  
+- **Dhwani Vyas** - Backend Architect
 - **Shreyash Shukla** - UI/UX Designer  
 
 ---
@@ -38,6 +36,5 @@
 ## 🔗 Resources  
 [![GitHub](https://img.shields.io/badge/GitHub-Repo-blue)](https://github.com/patel-tejas/anirveda)  
 [Kaggle Dataset](https://www.kaggle.com/datasets/chaitya0623/ethereum-transactions-for-fraud-detection/data)  
-[Demo Video](https://www.youtube.com/watch?v=6af6p2VU0RE)  
 
 *Financial security reimagined with AI-blockchain synergy* 🚀
